@@ -1,9 +1,25 @@
 {
-  "name": "@newrelic/mcp-server",
+  "name": "@piekstra/newrelic-mcp-server",
   "version": "0.1.0",
   "description": "MCP server for New Relic APIs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "newrelic-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/piekstra/newrelic-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/piekstra/newrelic-mcp-server/issues"
+  },
+  "homepage": "https://github.com/piekstra/newrelic-mcp-server#readme",
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
