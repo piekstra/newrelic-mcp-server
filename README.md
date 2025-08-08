@@ -184,6 +184,9 @@ cd newrelic-mcp-server
 # Install in development mode
 pip install -e .[dev]
 
+# Install pre-commit hooks
+pre-commit install
+
 # Run the server
 newrelic-mcp-server
 
@@ -195,6 +198,9 @@ black newrelic_mcp
 
 # Lint code
 flake8 newrelic_mcp
+
+# Run all pre-commit checks
+pre-commit run --all-files
 ```
 
 ## Dependencies

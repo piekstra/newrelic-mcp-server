@@ -1,7 +1,8 @@
 """
 New Relic MCP Server
 
-A Model Context Protocol (MCP) server that provides programmatic access to New Relic APIs.
+A Model Context Protocol (MCP) server that provides programmatic access to
+New Relic APIs.
 """
 
 __version__ = "1.2.0"

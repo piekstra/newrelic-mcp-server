@@ -11,59 +11,59 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: "3.x"
-    
+
     - name: Install build dependencies
       run: |
         python -m pip install --upgrade pip
         pip install build
-    
+
     - name: Build package
       run: python -m build
-    
+
     - name: Get tag name
       id: tag
       run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-    
+
     - name: Generate changelog
       id: changelog
       run: |
         # Extract version from tag
         VERSION=${GITHUB_REF#refs/tags/v}
-        
+
         # Create release notes
         cat > release_notes.md << EOF
         # New Relic MCP Server ${{ steps.tag.outputs.TAG_NAME }}
-        
+
         ## 📦 Installation
-        
+
         \`\`\`bash
         pip install newrelic-mcp-server
         \`\`\`
-        
+
         ## 🚀 Usage
-        
+
         \`\`\`bash
         # Set environment variables
         export NEWRELIC_API_KEY="your-api-key"
         export NEWRELIC_REGION="US"  # or "EU"
         export NEWRELIC_ACCOUNT_ID="your-account-id"
-        
+
         # Run the server
         newrelic-mcp-server
         \`\`\`
-        
+
         ## 🔧 Claude Desktop Configuration
-        
+
         \`\`\`json
         {
           "mcpServers": {
@@ -78,9 +78,9 @@ jobs:
           }
         }
         \`\`\`
-        
+
         ## 🛠️ Features
-        
+
         - ✅ All 16 New Relic API tools
         - ✅ NRQL query support
         - ✅ Dashboard and alert management
@@ -88,14 +88,14 @@ jobs:
         - ✅ Infrastructure monitoring
         - ✅ Deployment tracking
         - ✅ User management
-        
+
         ## 📚 Documentation
-        
+
         - [Full Documentation](https://github.com/piekstra/newrelic-mcp-server#readme)
         - [PyPI Package](https://pypi.org/project/newrelic-mcp-server/)
         - [Report Issues](https://github.com/piekstra/newrelic-mcp-server/issues)
         EOF
-    
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
