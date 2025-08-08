@@ -18,7 +18,12 @@ A Model Context Protocol (MCP) server that provides programmatic access to New R
 ## Installation
 
 ```bash
-npm install @piekstras/newrelic-mcp-server
+# Clone this repository
+git clone https://github.com/piekstra/newrelic-mcp-server.git
+cd newrelic-mcp-server
+
+# Install Python dependencies
+pip install -r requirements.txt
 ```
 
 ## Configuration
@@ -51,8 +56,8 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
 {
   "mcpServers": {
     "newrelic": {
-      "command": "npx",
-      "args": ["@piekstras/newrelic-mcp-server"],
+      "command": "python3",
+      "args": ["/path/to/newrelic-mcp-server/newrelic_mcp_server.py"],
       "env": {
         "NEWRELIC_API_KEY": "your-api-key-here",
         "NEWRELIC_REGION": "US",
@@ -67,10 +72,11 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
 
 ```bash
 # Start the server
-npx @piekstras/newrelic-mcp-server
+python3 newrelic_mcp_server.py
 
-# Or if installed locally
-npm start
+# Or make it executable and run directly
+chmod +x newrelic_mcp_server.py
+./newrelic_mcp_server.py
 ```
 
 ## Available Tools
@@ -119,70 +125,67 @@ npm start
 
 ### Query Application Performance
 
-```javascript
-// List all applications
-await tool.call('list_applications');
+```python
+# List all applications
+await list_applications()
 
-// Get specific application metrics
-await tool.call('get_application_metric_data', {
-  appId: '123456',
-  metricNames: ['HttpDispatcher', 'Apdex'],
-  from: '2024-01-01T00:00:00Z',
-  to: '2024-01-02T00:00:00Z'
-});
+# Get specific application metrics
+await get_application_metric_data(
+    app_id='123456',
+    metric_names=['HttpDispatcher', 'Apdex'],
+    from_time='2024-01-01T00:00:00Z',
+    to_time='2024-01-02T00:00:00Z'
+)
 ```
 
 ### Execute NRQL Query
 
-```javascript
-await tool.call('query_nrql', {
-  accountId: '1234567',
-  nrql: 'SELECT average(duration) FROM Transaction WHERE appName = "My App" SINCE 1 hour ago'
-});
+```python
+await query_nrql(
+    account_id='1234567',
+    nrql='SELECT average(duration) FROM Transaction WHERE appName = "My App" SINCE 1 hour ago'
+)
 ```
 
 ### Search Entities
 
-```javascript
-await tool.call('search_entities', {
-  query: 'name LIKE "%production%"',
-  limit: 50
-});
+```python
+await search_entities(
+    query='name LIKE "%production%"',
+    limit=50
+)
 ```
 
 ### Create Deployment Marker
 
-```javascript
-await tool.call('create_deployment', {
-  appId: '123456',
-  revision: 'v2.0.1',
-  description: 'Production deployment',
-  user: 'deploy-bot',
-  changelog: 'Fixed critical bug in payment processing'
-});
+```python
+await create_deployment(
+    app_id='123456',
+    revision='v2.0.1',
+    description='Production deployment',
+    user='deploy-bot',
+    changelog='Fixed critical bug in payment processing'
+)
 ```
 
 ## Development
 
 ```bash
 # Install dependencies
-npm install
+pip install -r requirements.txt
 
-# Build the project
-npm run build
+# Run the server in development
+python3 newrelic_mcp_server.py
 
-# Run in development mode
-npm run dev
-
-# Run tests
-npm test
-
-# Type checking
-npm run typecheck
-
-# Linting
-npm run lint
+# Test with environment variables
+NEWRELIC_API_KEY=your-key python3 newrelic_mcp_server.py
 ```
+
+## Dependencies
+
+- `fastmcp` - FastMCP framework for building MCP servers
+- `httpx` - Async HTTP client for API requests
+- `python-dotenv` - Environment variable management (optional)
 
 ## API Rate Limits
 
@@ -209,7 +212,7 @@ Be aware of New Relic's API rate limits:
 ### Rate Limiting
 
 If you encounter rate limit errors:
-- Implement exponential backoff
+- Implement exponential backoff in your client code
 - Cache frequently accessed data
 - Batch operations where possible
 
@@ -218,6 +221,12 @@ If you encounter rate limit errors:
 - Verify network connectivity
 - Check firewall rules for API endpoints
 - Ensure correct base URLs for your region
+
+### Python Environment
+
+- Ensure Python 3.7+ is installed
+- Install dependencies with `pip install -r requirements.txt`
+- Check that the script is executable: `chmod +x newrelic_mcp_server.py`
 
 ## Contributing
 
