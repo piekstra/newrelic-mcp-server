@@ -18,7 +18,7 @@ A Model Context Protocol (MCP) server that provides programmatic access to New R
 ## Installation
 
 ```bash
-npm install @piekstra/newrelic-mcp-server
+npm install @piekstras/newrelic-mcp-server
 ```
 
 ## Configuration
@@ -52,7 +52,7 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
   "mcpServers": {
     "newrelic": {
       "command": "npx",
-      "args": ["@piekstra/newrelic-mcp-server"],
+      "args": ["@piekstras/newrelic-mcp-server"],
       "env": {
         "NEWRELIC_API_KEY": "your-api-key-here",
         "NEWRELIC_REGION": "US",
@@ -67,7 +67,7 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
 
 ```bash
 # Start the server
-npx @piekstra/newrelic-mcp-server
+npx @piekstras/newrelic-mcp-server
 
 # Or if installed locally
 npm start

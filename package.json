@@ -1,5 +1,5 @@
 {
-  "name": "@piekstra/newrelic-mcp-server",
+  "name": "@piekstras/newrelic-mcp-server",
   "version": "0.1.0",
   "description": "MCP server for New Relic APIs",
   "main": "dist/index.js",
