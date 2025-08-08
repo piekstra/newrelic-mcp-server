@@ -250,6 +250,30 @@ If you encounter rate limit errors:
 - Install dependencies with `pip install -r requirements.txt`
 - Check that the script is executable: `chmod +x newrelic_mcp_server.py`
 
+### Command Not Found Issues
+
+If you encounter "command not found" errors after installation:
+- Try using the full path to the installed package:
+  - Linux/macOS (user install): `~/.local/bin/newrelic-mcp-server`
+  - macOS (Python framework): `/Library/Frameworks/Python.framework/Versions/3.13/bin/newrelic-mcp-server`
+  - System-wide: `/usr/local/bin/newrelic-mcp-server`
+- Or add the installation directory to your PATH: `export PATH="$HOME/.local/bin:$PATH"`
+- In Claude Desktop config, use the full path if the command isn't found:
+  ```json
+  {
+    "mcpServers": {
+      "newrelic": {
+        "command": "/Library/Frameworks/Python.framework/Versions/3.13/bin/newrelic-mcp-server",
+        "env": {
+          "NEWRELIC_API_KEY": "your-api-key-here",
+          "NEWRELIC_REGION": "US",
+          "NEWRELIC_ACCOUNT_ID": "your-account-id"
+        }
+      }
+    }
+  }
+  ```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
