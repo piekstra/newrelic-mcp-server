@@ -17,13 +17,21 @@ A Model Context Protocol (MCP) server that provides programmatic access to New R
 
 ## Installation
 
+### Option 1: Install from PyPI (Recommended)
+
+```bash
+pip install newrelic-mcp-server
+```
+
+### Option 2: Install from Source
+
 ```bash
 # Clone this repository
 git clone https://github.com/piekstra/newrelic-mcp-server.git
 cd newrelic-mcp-server
 
-# Install Python dependencies
-pip install -r requirements.txt
+# Install in development mode
+pip install -e .
 ```
 
 ## Configuration
@@ -56,8 +64,7 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
 {
   "mcpServers": {
     "newrelic": {
-      "command": "python3",
-      "args": ["/path/to/newrelic-mcp-server/newrelic_mcp_server.py"],
+      "command": "newrelic-mcp-server",
       "env": {
         "NEWRELIC_API_KEY": "your-api-key-here",
         "NEWRELIC_REGION": "US",
@@ -71,12 +78,11 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
 ### With Other MCP Clients
 
 ```bash
-# Start the server
-python3 newrelic_mcp_server.py
+# Start the server directly
+newrelic-mcp-server
 
-# Or make it executable and run directly
-chmod +x newrelic_mcp_server.py
-./newrelic_mcp_server.py
+# Or run as a module
+python -m newrelic_mcp
 ```
 
 ## Available Tools
@@ -171,14 +177,24 @@ await create_deployment(
 ## Development
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Clone the repository
+git clone https://github.com/piekstra/newrelic-mcp-server.git
+cd newrelic-mcp-server
 
-# Run the server in development
-python3 newrelic_mcp_server.py
+# Install in development mode
+pip install -e .[dev]
 
-# Test with environment variables
-NEWRELIC_API_KEY=your-key python3 newrelic_mcp_server.py
+# Run the server
+newrelic-mcp-server
+
+# Run tests (when available)
+pytest
+
+# Format code
+black newrelic_mcp
+
+# Lint code
+flake8 newrelic_mcp
 ```
 
 ## Dependencies

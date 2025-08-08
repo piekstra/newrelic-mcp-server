@@ -532,6 +532,23 @@ async def get_user(user_id: str) -> str:
 
 def main():
     """Initialize and run the FastMCP server"""
+    import sys
+    
+    # Handle --help flag
+    if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h']:
+        print("New Relic MCP Server")
+        print("Provides Claude Code access to New Relic monitoring APIs")
+        print("")
+        print("Usage: newrelic-mcp-server")
+        print("")
+        print("Environment Variables:")
+        print("  NEWRELIC_API_KEY      Your New Relic API key (required)")
+        print("  NEWRELIC_REGION       Region: US or EU (default: US)")
+        print("  NEWRELIC_ACCOUNT_ID   Your account ID (optional)")
+        print("")
+        print("For more information: https://github.com/piekstra/newrelic-mcp-server")
+        return
+    
     try:
         logger.info("Starting New Relic MCP server...")
         
