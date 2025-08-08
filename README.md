@@ -240,7 +240,7 @@ If you encounter rate limit errors:
 
 ### Python Environment
 
-- Ensure Python 3.8+ is installed
+- Ensure Python 3.10+ is installed
 - Install dependencies with `pip install -r requirements.txt`
 - Check that the script is executable: `chmod +x newrelic_mcp_server.py`
 
