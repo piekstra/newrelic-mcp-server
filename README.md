@@ -36,7 +36,23 @@ pip install -e .
 
 ## Configuration
 
-The server requires the following environment variables:
+### Secure Credential Setup (Recommended for macOS)
+
+For enhanced security on macOS, use the built-in keychain storage instead of environment variables:
+
+```bash
+# Run the secure setup wizard
+newrelic-mcp-setup
+
+# Or set up manually with Python
+python -m newrelic_mcp.credentials
+```
+
+This will securely store your API key and account ID in the macOS Keychain, eliminating the need to store sensitive credentials in plain text files.
+
+### Environment Variables (Alternative)
+
+If you prefer environment variables or are not on macOS, you can use:
 
 ```bash
 # Required
@@ -46,6 +62,8 @@ export NEWRELIC_API_KEY="your-api-key-here"  # Your New Relic User API key
 export NEWRELIC_REGION="US"  # or "EU" (default: "US")
 export NEWRELIC_ACCOUNT_ID="your-account-id"  # Required for some operations
 ```
+
+**Note:** The server will automatically prefer keychain storage over environment variables when both are available.
 
 ### Getting Your API Key
 
@@ -58,7 +76,24 @@ export NEWRELIC_ACCOUNT_ID="your-account-id"  # Required for some operations
 
 ### With Claude Desktop
 
-Add the following to your Claude Desktop configuration (`claude_desktop_config.json`):
+#### Option 1: Using Secure Keychain (Recommended for macOS)
+
+After setting up credentials with `newrelic-mcp-setup`, add the following to your Claude Desktop configuration (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "newrelic": {
+      "command": "newrelic-mcp-server",
+      "env": {
+        "NEWRELIC_REGION": "US"
+      }
+    }
+  }
+}
+```
+
+#### Option 2: Using Environment Variables (Less Secure)
 
 ```json
 {
@@ -74,6 +109,8 @@ Add the following to your Claude Desktop configuration (`claude_desktop_config.j
   }
 }
 ```
+
+**Security Note:** Option 1 is strongly recommended as it keeps your sensitive API key out of configuration files.
 
 ### With Other MCP Clients
 
@@ -126,6 +163,13 @@ python -m newrelic_mcp
 
 - `list_users` - List account users
 - `get_user` - Get user details
+
+### Credential Management
+
+- `manage_credentials` - Securely manage API credentials in keychain
+  - `action="status"` - Show current credential storage status
+  - `action="store"` - Store new credentials securely (requires `api_key` parameter)
+  - `action="delete"` - Remove all stored credentials
 
 ## Examples
 
@@ -218,10 +262,12 @@ Be aware of New Relic's API rate limits:
 
 ## Security
 
+- **Use keychain storage on macOS**: Run `newrelic-mcp-setup` to store credentials securely in the system keychain
 - Never commit API keys to version control
-- Use environment variables for sensitive configuration
+- Avoid storing sensitive credentials in plain text configuration files
 - API keys should have minimal required permissions
 - Consider using separate keys for different environments
+- The server automatically prioritizes keychain storage over environment variables for enhanced security
 
 ## Troubleshooting
 
@@ -230,6 +276,8 @@ Be aware of New Relic's API rate limits:
 - Ensure your API key starts with `NRAK`
 - Verify the key has the necessary permissions
 - Check if you're using the correct region (US/EU)
+- If using keychain storage, verify credentials are stored with `manage_credentials` action="status"
+- Try re-running `newrelic-mcp-setup` if keychain access fails
 
 ### Rate Limiting
 

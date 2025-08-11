@@ -6,11 +6,12 @@ Provides Claude Code access to New Relic monitoring APIs
 
 import json
 import logging
-import os
 from typing import Any, Dict, List, Optional
 
 import httpx
 from mcp.server.fastmcp import FastMCP
+
+from .credentials import SecureCredentials
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -275,15 +276,20 @@ client: Optional[NewRelicClient] = None
 
 
 def initialize_client():
-    """Initialize the New Relic client with environment variables"""
+    """Initialize the New Relic client with secure credentials"""
     global client
 
-    api_key = os.getenv("NEWRELIC_API_KEY") or os.getenv("NEW_RELIC_API_KEY")
-    region = os.getenv("NEWRELIC_REGION", "US")
-    account_id = os.getenv("NEWRELIC_ACCOUNT_ID")
+    # Use secure credential storage
+    api_key = SecureCredentials.get_api_key()
+    region = SecureCredentials.get_region()
+    account_id = SecureCredentials.get_account_id()
 
     if not api_key:
-        raise Exception("NEWRELIC_API_KEY environment variable is required")
+        raise Exception(
+            "New Relic API key not found. Please run "
+            "'python -m newrelic_mcp.credentials' to set up secure credential "
+            "storage, or set NEWRELIC_API_KEY environment variable."
+        )
 
     client = NewRelicClient(api_key, region, account_id)
     logger.info(
@@ -535,6 +541,76 @@ async def nerdgraph_query(
     try:
         result = await client.nerdgraph_query(query, variables)
         return json.dumps(result, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)
+
+
+@mcp.tool()
+async def manage_credentials(
+    action: str, api_key: Optional[str] = None, account_id: Optional[str] = None
+) -> str:
+    """
+    Manage New Relic credentials securely in keychain.
+
+    Actions:
+    - 'status': Show current credential status
+    - 'store': Store new credentials (requires api_key parameter)
+    - 'delete': Remove all credentials from keychain
+    """
+    try:
+        if action == "status":
+            status = SecureCredentials.list_stored_credentials()
+            return json.dumps(
+                {"status": status, "message": "Current credential status"}, indent=2
+            )
+
+        elif action == "store":
+            if not api_key:
+                return json.dumps(
+                    {"error": "api_key parameter is required for store action"},
+                    indent=2,
+                )
+
+            if not api_key.startswith("NRAK-"):
+                return json.dumps(
+                    {
+                        "error": "Invalid API key format. "
+                        "New Relic API keys start with 'NRAK-'"
+                    },
+                    indent=2,
+                )
+
+            SecureCredentials.store_api_key(api_key)
+            if account_id:
+                SecureCredentials.store_account_id(account_id)
+
+            return json.dumps(
+                {
+                    "success": True,
+                    "message": "Credentials stored securely in keychain",
+                },
+                indent=2,
+            )
+
+        elif action == "delete":
+            SecureCredentials.delete_credentials()
+            return json.dumps(
+                {
+                    "success": True,
+                    "message": "All credentials removed from keychain",
+                },
+                indent=2,
+            )
+
+        else:
+            return json.dumps(
+                {
+                    "error": f"Unknown action '{action}'. "
+                    "Valid actions: status, store, delete"
+                },
+                indent=2,
+            )
+
     except Exception as e:
         return json.dumps({"error": str(e)}, indent=2)
 

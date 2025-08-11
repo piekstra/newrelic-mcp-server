@@ -50,10 +50,35 @@ jobs:
         pip install newrelic-mcp-server
         \`\`\`
 
-        ## 🚀 Usage
+        ## 🔐 Secure Setup (Recommended for macOS)
 
         \`\`\`bash
-        # Set environment variables
+        # Run the secure credential setup
+        newrelic-mcp-setup
+
+        # Run the server (credentials stored securely)
+        newrelic-mcp-server
+        \`\`\`
+
+        ## 🔧 Claude Desktop Configuration (Secure)
+
+        \`\`\`json
+        {
+          "mcpServers": {
+            "newrelic": {
+              "command": "newrelic-mcp-server",
+              "env": {
+                "NEWRELIC_REGION": "US"
+              }
+            }
+          }
+        }
+        \`\`\`
+
+        ## 📋 Alternative: Environment Variables
+
+        \`\`\`bash
+        # Set environment variables (less secure)
         export NEWRELIC_API_KEY="your-api-key"
         export NEWRELIC_REGION="US"  # or "EU"
         export NEWRELIC_ACCOUNT_ID="your-account-id"
@@ -62,7 +87,7 @@ jobs:
         newrelic-mcp-server
         \`\`\`
 
-        ## 🔧 Claude Desktop Configuration
+        ## 🔧 Claude Desktop Configuration (Environment Variables)
 
         \`\`\`json
         {
@@ -81,13 +106,15 @@ jobs:
 
         ## 🛠️ Features
 
-        - ✅ All 16 New Relic API tools
+        - 🔐 **NEW: Secure credential storage** using macOS Keychain
+        - ✅ All 17 New Relic API tools (including credential management)
         - ✅ NRQL query support
         - ✅ Dashboard and alert management
         - ✅ Application performance monitoring
         - ✅ Infrastructure monitoring
         - ✅ Deployment tracking
         - ✅ User management
+        - ✅ Backwards compatibility with environment variables
 
         ## 📚 Documentation
 

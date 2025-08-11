@@ -29,6 +29,7 @@ keywords = ["newrelic", "mcp", "monitoring", "observability", "claude", "ai"]
 dependencies = [
     "fastmcp>=0.1.0",
     "httpx>=0.24.0",
+    "keyring>=24.0.0",
 ]
 
 [project.optional-dependencies]
@@ -50,6 +51,7 @@ Documentation = "https://github.com/piekstra/newrelic-mcp-server#readme"
 
 [project.scripts]
 newrelic-mcp-server = "newrelic_mcp:main"
+newrelic-mcp-setup = "newrelic_mcp.credentials:setup_credentials_cli"
 
 [tool.setuptools.packages.find]
 where = ["."]
