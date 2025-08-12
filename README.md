@@ -6,6 +6,7 @@ A Model Context Protocol (MCP) server that provides programmatic access to New R
 
 - **APM Application Management**: List and retrieve application details, metrics, and metric data
 - **NRQL Queries**: Execute NRQL queries via NerdGraph
+- **Log Parsing Rules**: Intelligently create, manage, and test GROK patterns for log parsing
 - **Alert Policies**: List and manage alert policies
 - **Synthetic Monitoring**: Access synthetic monitor information
 - **Dashboards**: List and retrieve dashboard configurations
@@ -164,6 +165,15 @@ python -m newrelic_mcp
 - `list_users` - List account users
 - `get_user` - Get user details
 
+### Log Parsing Rules
+
+- `list_log_parsing_rules` - List all log parsing rules for an account
+- `create_log_parsing_rule` - Create a new log parsing rule with GROK pattern and NRQL filter
+- `update_log_parsing_rule` - Update an existing log parsing rule
+- `delete_log_parsing_rule` - Delete a log parsing rule
+- `test_log_parsing_rule` - Test a GROK pattern against sample logs (generates pattern if not provided)
+- `generate_log_parsing_rule` - Intelligently generate GROK patterns from log samples or NRQL queries
+
 ### Credential Management
 
 - `manage_credentials` - Securely manage API credentials in keychain
@@ -216,6 +226,76 @@ await create_deployment(
     user='deploy-bot',
     changelog='Fixed critical bug in payment processing'
 )
+```
+
+### Log Parsing Rules
+
+#### Generate GROK Pattern from Log Samples
+
+```python
+# Generate parsing rule from sample logs (sanitized example)
+await generate_log_parsing_rule(
+    log_samples=[
+        "Updated info for user 12345678-1234-5678-9012-123456789012 (updated 1 rows, expected 1) - updated values: EmailAddress test@example.com, FirstName TestName, LastName TestLast, Active True, EmailConfirmed False"
+    ]
+)
+
+# Returns generated GROK pattern and NRQL filter:
+# {
+#   "grok_pattern": "Updated info for user %{UUID:user_id:string} \\(updated %{INT:rows_affected:long} rows, expected %{INT:rows_expected:long}\\) - updated values: EmailAddress %{DATA:email:string}, FirstName %{WORD:first_name:string}, LastName %{WORD:last_name:string}, Active %{WORD:active:string}, EmailConfirmed %{WORD:emailconfirmed:string}",
+#   "nrql_pattern": "SELECT * FROM Log WHERE message LIKE 'Updated info for user % (updated % rows, expected %) - updated values: EmailAddress %, FirstName %, LastName %, Active %, EmailConfirmed %'",
+#   "suggested_description": "Auto-generated parsing rule for single log sample"
+# }
+```
+
+#### Create Log Parsing Rule
+
+```python
+# Create a new parsing rule using generated patterns
+await create_log_parsing_rule(
+    description="User update audit log parsing",
+    grok="Updated info for user %{UUID:user_id:string} \\(updated %{INT:rows_affected:long} rows, expected %{INT:rows_expected:long}\\) - updated values: EmailAddress %{DATA:email:string}, FirstName %{WORD:first_name:string}, LastName %{WORD:last_name:string}, Active %{WORD:active:string}, EmailConfirmed %{WORD:emailconfirmed:string}",
+    nrql="SELECT * FROM Log WHERE message LIKE 'Updated info for user % (updated % rows, expected %) - updated values: EmailAddress %, FirstName %, LastName %, Active %, EmailConfirmed %'",
+    enabled=True
+)
+```
+
+#### Generate from Live Logs
+
+```python
+# Generate patterns from logs matching a query
+await generate_log_parsing_rule(
+    log_query="service = 'user-service' AND message LIKE '%Updated info for user%'",
+    time_range="1 day ago",
+    field_hints={"user_id": "UUID", "email": "EMAIL"}
+)
+```
+
+#### Test Parsing Rules
+
+```python
+# Test a GROK pattern against samples
+await test_log_parsing_rule(
+    log_samples=["Updated info for user 12345678-1234-5678-9012-123456789012 (updated 1 rows, expected 1)"],
+    grok_pattern="Updated info for user %{UUID:user_id:string} \\(updated %{INT:rows_affected:long} rows, expected %{INT:rows_expected:long}\\)"
+)
+```
+
+#### Manage Parsing Rules
+
+```python
+# List all parsing rules
+await list_log_parsing_rules()
+
+# Update a rule
+await update_log_parsing_rule(
+    rule_id="12345",
+    description="Updated user audit log parsing",
+    enabled=False
+)
+
+# Delete a rule
+await delete_log_parsing_rule(rule_id="12345")
 ```
 
 ## Development

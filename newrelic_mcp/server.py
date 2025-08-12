@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 from mcp.server.fastmcp import FastMCP
 
+from . import log_parsing
 from .credentials import SecureCredentials
 
 # Configure logging
@@ -636,6 +637,160 @@ async def get_user(user_id: str) -> str:
 
     try:
         result = await client.get_user(user_id)
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)
+
+
+# Log Parsing Tools
+@mcp.tool()
+async def list_log_parsing_rules(account_id: Optional[str] = None) -> str:
+    """List all log parsing rules for an account"""
+    if not client:
+        return json.dumps({"error": "New Relic client not initialized"})
+
+    # Use provided account_id or fall back to client's account_id
+    acct_id = account_id or client.account_id
+    if not acct_id:
+        return json.dumps({"error": "Account ID required but not provided"})
+
+    try:
+        result = await log_parsing.list_log_parsing_rules(client, acct_id)
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)
+
+
+@mcp.tool()
+async def create_log_parsing_rule(
+    description: str,
+    grok: str,
+    nrql: str,
+    enabled: bool = True,
+    lucene: str = "",
+    account_id: Optional[str] = None,
+) -> str:
+    """Create a new log parsing rule"""
+    if not client:
+        return json.dumps({"error": "New Relic client not initialized"})
+
+    acct_id = account_id or client.account_id
+    if not acct_id:
+        return json.dumps({"error": "Account ID required but not provided"})
+
+    try:
+        result = await log_parsing.create_log_parsing_rule(
+            client, acct_id, description, grok, nrql, enabled, lucene
+        )
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)
+
+
+@mcp.tool()
+async def update_log_parsing_rule(
+    rule_id: str,
+    description: Optional[str] = None,
+    grok: Optional[str] = None,
+    nrql: Optional[str] = None,
+    enabled: Optional[bool] = None,
+    lucene: Optional[str] = None,
+    account_id: Optional[str] = None,
+) -> str:
+    """Update an existing log parsing rule"""
+    if not client:
+        return json.dumps({"error": "New Relic client not initialized"})
+
+    acct_id = account_id or client.account_id
+    if not acct_id:
+        return json.dumps({"error": "Account ID required but not provided"})
+
+    try:
+        result = await log_parsing.update_log_parsing_rule(
+            client, acct_id, rule_id, description, grok, nrql, enabled, lucene
+        )
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)
+
+
+@mcp.tool()
+async def delete_log_parsing_rule(
+    rule_id: str, account_id: Optional[str] = None
+) -> str:
+    """Delete a log parsing rule"""
+    if not client:
+        return json.dumps({"error": "New Relic client not initialized"})
+
+    acct_id = account_id or client.account_id
+    if not acct_id:
+        return json.dumps({"error": "Account ID required but not provided"})
+
+    try:
+        success = await log_parsing.delete_log_parsing_rule(client, acct_id, rule_id)
+        return json.dumps({"success": success}, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)
+
+
+@mcp.tool()
+async def test_log_parsing_rule(
+    log_samples: List[str],
+    grok_pattern: Optional[str] = None,
+    account_id: Optional[str] = None,
+) -> str:
+    """
+    Test a log parsing rule against sample logs.
+    If no grok_pattern is provided, it will generate one automatically.
+    """
+    if not client:
+        return json.dumps({"error": "New Relic client not initialized"})
+
+    acct_id = account_id or client.account_id
+    if not acct_id:
+        return json.dumps({"error": "Account ID required but not provided"})
+
+    try:
+        result = await log_parsing.test_log_parsing_rule(
+            client, acct_id, log_samples, grok_pattern
+        )
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)
+
+
+@mcp.tool()
+async def generate_log_parsing_rule(
+    log_query: Optional[str] = None,
+    log_samples: Optional[List[str]] = None,
+    time_range: str = "1 hour ago",
+    field_hints: Optional[Dict[str, str]] = None,
+    account_id: Optional[str] = None,
+) -> str:
+    """
+    Generate a log parsing rule from either a query or provided samples.
+
+    Args:
+        log_query: Optional NRQL WHERE clause to fetch logs (e.g., "service = 'api'")
+        log_samples: Optional list of log message samples
+        time_range: Time range for log query (default: "1 hour ago")
+        field_hints: Optional hints for field types (e.g., {"user_id": "UUID"})
+        account_id: Optional account ID (uses default if not provided)
+
+    Returns:
+        Generated GROK pattern, NRQL pattern, and analysis
+    """
+    if not client:
+        return json.dumps({"error": "New Relic client not initialized"})
+
+    acct_id = account_id or client.account_id
+    if not acct_id:
+        return json.dumps({"error": "Account ID required but not provided"})
+
+    try:
+        result = await log_parsing.generate_parsing_rule_from_logs(
+            client, acct_id, log_query, log_samples, time_range, field_hints
+        )
         return json.dumps(result, indent=2)
     except Exception as e:
         return json.dumps({"error": str(e)}, indent=2)
