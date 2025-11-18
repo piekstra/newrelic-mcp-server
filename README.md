@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server that provides programmatic access to New Relic APIs, enabling AI assistants and other tools to interact with New Relic monitoring and observability data.
 
+<a href="https://glama.ai/mcp/servers/@piekstra/newrelic-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@piekstra/newrelic-mcp-server/badge" alt="New Relic Server MCP server" />
+</a>
+
 ## Features
 
 - **APM Application Management**: List and retrieve application details, metrics, and metric data
