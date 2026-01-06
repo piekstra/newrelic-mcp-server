@@ -189,17 +189,17 @@ class NewRelicClient:
             raise Exception("Account ID is required for dashboard operations")
 
         query = """
-        query($accountId: Int!) {
+        query($query: String!) {
             actor {
-                account(id: $accountId) {
-                    dashboards {
-                        results {
+                entitySearch(query: $query) {
+                    results {
+                        entities {
                             guid
                             name
-                            description
-                            createdAt
-                            updatedAt
-                            permissions
+                            accountId
+                            ... on DashboardEntityOutline {
+                                dashboardParentGuid
+                            }
                         }
                     }
                 }
@@ -207,8 +207,64 @@ class NewRelicClient:
         }
         """
 
-        variables = {"accountId": int(acc_id)}
+        variables = {"query": f"type = 'DASHBOARD' AND accountId = {acc_id}"}
         return await self.nerdgraph_query(query, variables)
+
+    async def update_dashboard_widget(
+        self,
+        page_guid: str,
+        widget_id: str,
+        title: str,
+        nrql_query: str,
+        account_id: str,
+        visualization_id: str = "viz.table",
+    ) -> Dict[str, Any]:
+        """Update a single widget in a dashboard page"""
+        mutation = """
+        mutation($pageGuid: EntityGuid!, $widgets: [DashboardUpdateWidgetInput!]!) {
+            dashboardUpdateWidgetsInPage(
+                guid: $pageGuid,
+                widgets: $widgets
+            ) {
+                errors {
+                    description
+                    type
+                }
+            }
+        }
+        """
+
+        widget_config = {
+            "id": widget_id,
+            "title": title,
+            "configuration": {
+                "table": {
+                    "nrqlQueries": [{"accountId": int(account_id), "query": nrql_query}]
+                }
+            },
+        }
+
+        # Map visualization IDs to configuration types
+        viz_to_config = {
+            "viz.table": "table",
+            "viz.billboard": "billboard",
+            "viz.line": "line",
+            "viz.area": "area",
+            "viz.bar": "bar",
+            "viz.pie": "pie",
+            "viz.stacked-bar": "bar",
+        }
+
+        config_type = viz_to_config.get(visualization_id, "table")
+        widget_config["configuration"] = {
+            config_type: {
+                "nrqlQueries": [{"accountId": int(account_id), "query": nrql_query}]
+            }
+        }
+
+        variables = {"pageGuid": page_guid, "widgets": [widget_config]}
+
+        return await self.nerdgraph_query(mutation, variables)
 
     async def get_dashboard(self, guid: str) -> Dict[str, Any]:
         """Get details for a specific dashboard"""
@@ -232,7 +288,7 @@ class NewRelicClient:
                                 visualization {
                                     id
                                 }
-                                configuration
+                                rawConfiguration
                             }
                         }
                     }
@@ -247,16 +303,17 @@ class NewRelicClient:
     async def search_entities(self, query: str, limit: int = 25) -> Dict[str, Any]:
         """Search for entities in New Relic"""
         gql_query = """
-        query($query: String!, $limit: Int!) {
+        query($query: String!) {
             actor {
                 entitySearch(query: $query) {
-                    results(limit: $limit) {
+                    results {
                         entities {
                             guid
                             name
                             type
                             entityType
                             domain
+                            accountId
                             tags {
                                 key
                                 values
@@ -268,7 +325,7 @@ class NewRelicClient:
         }
         """
 
-        variables = {"query": query, "limit": limit}
+        variables = {"query": query}
         return await self.nerdgraph_query(gql_query, variables)
 
 
@@ -447,6 +504,47 @@ async def get_dashboard(guid: str) -> str:
 
     try:
         result = await client.get_dashboard(guid)
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)}, indent=2)
+
+
+@mcp.tool()
+async def update_dashboard(
+    page_guid: str,
+    widget_id: str,
+    title: str,
+    nrql_query: str,
+    account_id: Optional[str] = None,
+    visualization_id: str = "viz.table",
+) -> str:
+    """
+    Update a widget in a dashboard page.
+
+    Args:
+        page_guid: The GUID of the dashboard page containing the widget
+        widget_id: The ID of the widget to update
+        title: The new title for the widget
+        nrql_query: The NRQL query for the widget
+        account_id: Account ID for the query (uses default if not provided)
+        visualization_id: Visualization type (viz.table, viz.billboard, etc)
+    """
+    if not client:
+        return json.dumps({"error": "New Relic client not initialized"})
+
+    acc_id = account_id or client.account_id
+    if not acc_id:
+        return json.dumps({"error": "No account ID provided and no default configured"})
+
+    try:
+        result = await client.update_dashboard_widget(
+            page_guid=page_guid,
+            widget_id=widget_id,
+            title=title,
+            nrql_query=nrql_query,
+            account_id=acc_id,
+            visualization_id=visualization_id,
+        )
         return json.dumps(result, indent=2)
     except Exception as e:
         return json.dumps({"error": str(e)}, indent=2)

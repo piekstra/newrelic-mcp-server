@@ -21,9 +21,11 @@ def generate_grok_pattern_for_log(log_sample: str) -> Tuple[str, str]:
     nrql_pattern = log_sample
 
     # Replace UUIDs
-    uuid_pattern = re.compile(
-        r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b"
+    uuid_regex = (
+        r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
+        r"[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b"
     )
+    uuid_pattern = re.compile(uuid_regex)
     for match in uuid_pattern.finditer(log_sample):
         uuid_str = match.group()
         # Determine context for field name
@@ -54,7 +56,10 @@ def generate_grok_pattern_for_log(log_sample: str) -> Tuple[str, str]:
         full_match = match.group()
         action = match.group(1)
 
-        replacement = f"{action} %{{INT:rows_affected:long}} rows, expected %{{INT:rows_expected:long}}"
+        replacement = (
+            f"{action} %{{INT:rows_affected:long}} rows, "
+            f"expected %{{INT:rows_expected:long}}"
+        )
         grok_pattern = grok_pattern.replace(full_match, replacement, 1)
         nrql_pattern = nrql_pattern.replace(
             full_match, f"{action} % rows, expected %", 1
@@ -86,7 +91,7 @@ def generate_grok_pattern_for_log(log_sample: str) -> Tuple[str, str]:
 
     # Escape special regex characters for GROK
     # Parentheses need to be escaped
-    grok_pattern = grok_pattern.replace("(", "\(").replace(")", "\)")
+    grok_pattern = grok_pattern.replace("(", r"\(").replace(")", r"\)")
 
     return grok_pattern, nrql_pattern
 
@@ -104,11 +109,20 @@ class GrokPatternGenerator:
         "SPACE": r"\s+",
         "NOTSPACE": r"\S+",
         # Common log patterns
-        "TIMESTAMP_ISO8601": r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?",
+        "TIMESTAMP_ISO8601": (
+            r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}"
+            r"(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?"
+        ),
         "LOGLEVEL": r"(?:DEBUG|INFO|WARN(?:ING)?|ERROR|FATAL|TRACE)",
-        "UUID": r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
+        "UUID": (
+            r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+            r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+        ),
         "IPV4": r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}",
-        "HOSTNAME": r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*",
+        "HOSTNAME": (
+            r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?"
+            r"(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*"
+        ),
         "PATH": r"(?:/[^/\s]*)+",
         "EMAIL": r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
         "URL": r"https?://[^\s]+",
@@ -243,9 +257,11 @@ class GrokPatternGenerator:
             pass
 
         # Check if UUID
-        uuid_pattern = re.compile(
-            r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        uuid_regex = (
+            r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+            r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         )
+        uuid_pattern = re.compile(uuid_regex)
         if uuid_pattern.match(val1) and uuid_pattern.match(val2):
             return "UUID"
 
@@ -411,22 +427,13 @@ async def create_log_parsing_rule(
     lucene: str = "",
 ) -> Dict[str, Any]:
     """Create a new log parsing rule"""
-    # Escape special characters in GROK pattern for GraphQL
-    # grok_escaped = grok.replace("\\", "\\\\")
-
-    mutation = f"""
-    mutation {{
+    mutation = """
+    mutation($accountId: Int!, $rule: LogConfigurationsParsingRuleConfiguration!) {
         logConfigurationsCreateParsingRule(
-            accountId: {int(account_id)},
-            rule: {{
-                description: "{description}"
-                enabled: {str(enabled).lower()}
-                grok: "{grok}"
-                lucene: "{lucene}"
-                nrql: "{nrql}"
-            }}
-        ) {{
-            rule {{
+            accountId: $accountId,
+            rule: $rule
+        ) {
+            rule {
                 id
                 description
                 enabled
@@ -434,16 +441,27 @@ async def create_log_parsing_rule(
                 lucene
                 nrql
                 updatedAt
-            }}
-            errors {{
+            }
+            errors {
                 message
                 type
-            }}
-        }}
-    }}
+            }
+        }
+    }
     """
 
-    result = await client.nerdgraph_query(mutation)
+    variables = {
+        "accountId": int(account_id),
+        "rule": {
+            "description": description,
+            "enabled": enabled,
+            "grok": grok,
+            "lucene": lucene,
+            "nrql": nrql,
+        },
+    }
+
+    result = await client.nerdgraph_query(mutation, variables)
 
     if result and "data" in result:
         create_result = result["data"].get("logConfigurationsCreateParsingRule", {})
@@ -451,7 +469,7 @@ async def create_log_parsing_rule(
             raise Exception(f"Failed to create rule: {create_result['errors']}")
         return create_result.get("rule", {})
 
-    raise Exception("Failed to create parsing rule")
+    raise Exception(f"Failed to create parsing rule: {result}")
 
 
 async def update_log_parsing_rule(
@@ -465,31 +483,31 @@ async def update_log_parsing_rule(
     lucene: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Update an existing log parsing rule"""
-
-    # Build the update fields
-    rule_fields = []
+    # Build the rule object
+    rule = {}
     if description is not None:
-        rule_fields.append(f'description: "{description}"')
+        rule["description"] = description
     if enabled is not None:
-        rule_fields.append(f"enabled: {str(enabled).lower()}")
+        rule["enabled"] = enabled
     if grok is not None:
-        # grok_escaped = grok.replace("\\", "\\\\")
-        rule_fields.append(f'grok: "{grok}"')
+        rule["grok"] = grok
     if lucene is not None:
-        rule_fields.append(f'lucene: "{lucene}"')
+        rule["lucene"] = lucene
     if nrql is not None:
-        rule_fields.append(f'nrql: "{nrql}"')
+        rule["nrql"] = nrql
 
-    rule_object = "{ " + ", ".join(rule_fields) + " }"
-
-    mutation = f"""
-    mutation {{
+    mutation = """
+    mutation(
+        $accountId: Int!,
+        $ruleId: ID!,
+        $rule: LogConfigurationsParsingRuleConfiguration!
+    ) {
         logConfigurationsUpdateParsingRule(
-            accountId: {int(account_id)},
-            id: "{rule_id}",
-            rule: {rule_object}
-        ) {{
-            rule {{
+            accountId: $accountId,
+            id: $ruleId,
+            rule: $rule
+        ) {
+            rule {
                 id
                 description
                 enabled
@@ -497,16 +515,18 @@ async def update_log_parsing_rule(
                 lucene
                 nrql
                 updatedAt
-            }}
-            errors {{
+            }
+            errors {
                 message
                 type
-            }}
-        }}
-    }}
+            }
+        }
+    }
     """
 
-    result = await client.nerdgraph_query(mutation)
+    variables = {"accountId": int(account_id), "ruleId": rule_id, "rule": rule}
+
+    result = await client.nerdgraph_query(mutation, variables)
 
     if result and "data" in result:
         update_result = result["data"].get("logConfigurationsUpdateParsingRule", {})
@@ -514,7 +534,7 @@ async def update_log_parsing_rule(
             raise Exception(f"Failed to update rule: {update_result['errors']}")
         return update_result.get("rule", {})
 
-    raise Exception("Failed to update parsing rule")
+    raise Exception(f"Failed to update parsing rule: {result}")
 
 
 async def delete_log_parsing_rule(client, account_id: str, rule_id: str) -> bool:
