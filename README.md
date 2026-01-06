@@ -2,6 +2,8 @@
 
 A Model Context Protocol (MCP) server that provides programmatic access to New Relic APIs, enabling AI assistants and other tools to interact with New Relic monitoring and observability data.
 
+> **See also:** [newrelic-cli](https://github.com/piekstra/newrelic-cli) - Command-line interface with the same New Relic functionality.
+
 ## Features
 
 - **APM Application Management**: List and retrieve application details, metrics, and metric data
