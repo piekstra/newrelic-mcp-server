@@ -109,9 +109,40 @@ class NewRelicClient:
         return await self._make_request("GET", url)
 
     async def get_alert_policy(self, policy_id: str) -> Dict[str, Any]:
-        """Get details for a specific alert policy"""
-        url = f"{self.base_url}/alerts_policies/{policy_id}.json"
-        return await self._make_request("GET", url)
+        """Get details for a specific alert policy using NerdGraph"""
+        query = """
+        query($accountId: Int!, $policyId: ID!) {
+            actor {
+                account(id: $accountId) {
+                    alerts {
+                        policy(id: $policyId) {
+                            id
+                            name
+                            incidentPreference
+                        }
+                    }
+                }
+            }
+        }
+        """
+        if not self.account_id:
+            raise Exception("Account ID is required for alert policy lookup")
+
+        variables = {"accountId": int(self.account_id), "policyId": policy_id}
+        result = await self.nerdgraph_query(query, variables)
+
+        if result and "data" in result:
+            policy = (
+                result.get("data", {})
+                .get("actor", {})
+                .get("account", {})
+                .get("alerts", {})
+                .get("policy")
+            )
+            if policy:
+                return {"policy": policy}
+
+        return {"policy": None}
 
     async def list_synthetic_monitors(self) -> Dict[str, Any]:
         """List all synthetic monitors"""
@@ -124,14 +155,126 @@ class NewRelicClient:
         )
 
     async def list_users(self) -> Dict[str, Any]:
-        """List all users in the account"""
-        url = f"{self.base_url}/users.json"
-        return await self._make_request("GET", url)
+        """List all users in the account using NerdGraph"""
+        query = """
+        {
+            actor {
+                organization {
+                    userManagement {
+                        authenticationDomains {
+                            authenticationDomains {
+                                id
+                                name
+                                users {
+                                    users {
+                                        id
+                                        name
+                                        email
+                                        type {
+                                            displayName
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+        result = await self.nerdgraph_query(query)
+
+        # Flatten the nested structure into a simple users list
+        users = []
+        if result and "data" in result:
+            domains = (
+                result.get("data", {})
+                .get("actor", {})
+                .get("organization", {})
+                .get("userManagement", {})
+                .get("authenticationDomains", {})
+                .get("authenticationDomains", [])
+            )
+            for domain in domains:
+                domain_users = domain.get("users", {}).get("users", [])
+                for user in domain_users:
+                    users.append(
+                        {
+                            "id": user.get("id"),
+                            "name": user.get("name"),
+                            "email": user.get("email"),
+                            "type": user.get("type", {}).get("displayName"),
+                            "authentication_domain": domain.get("name"),
+                        }
+                    )
+
+        return {"users": users}
 
     async def get_user(self, user_id: str) -> Dict[str, Any]:
-        """Get details for a specific user"""
-        url = f"{self.base_url}/users/{user_id}.json"
-        return await self._make_request("GET", url)
+        """Get details for a specific user using NerdGraph"""
+        query = """
+        {
+            actor {
+                organization {
+                    userManagement {
+                        authenticationDomains {
+                            authenticationDomains {
+                                id
+                                name
+                                users {
+                                    users {
+                                        id
+                                        name
+                                        email
+                                        type {
+                                            displayName
+                                        }
+                                        groups {
+                                            groups {
+                                                displayName
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+        result = await self.nerdgraph_query(query)
+
+        # Find the user in the nested structure
+        if result and "data" in result:
+            domains = (
+                result.get("data", {})
+                .get("actor", {})
+                .get("organization", {})
+                .get("userManagement", {})
+                .get("authenticationDomains", {})
+                .get("authenticationDomains", [])
+            )
+            for domain in domains:
+                domain_users = domain.get("users", {}).get("users", [])
+                for user in domain_users:
+                    if user.get("id") == user_id:
+                        groups = [
+                            g.get("displayName")
+                            for g in user.get("groups", {}).get("groups", [])
+                        ]
+                        return {
+                            "user": {
+                                "id": user.get("id"),
+                                "name": user.get("name"),
+                                "email": user.get("email"),
+                                "type": user.get("type", {}).get("displayName"),
+                                "groups": groups,
+                                "authentication_domain": domain.get("name"),
+                            }
+                        }
+
+        return {"user": None}
 
     async def list_servers(self) -> Dict[str, Any]:
         """List all servers monitored by New Relic Infrastructure"""
