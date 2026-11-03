@@ -7,7 +7,7 @@ New Relic APIs.
 
 __version__ = "1.3.0"
 __author__ = "Caleb Piekstra"
-__email__ = "calebpiekstra@gmail.com"
+__email__ = "piekstra@users.noreply.github.com"
 
 from .server import main
 
