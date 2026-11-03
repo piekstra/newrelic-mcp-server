@@ -5,7 +5,7 @@ A Model Context Protocol (MCP) server that provides programmatic access to
 New Relic APIs.
 """
 
-__version__ = "1.3.0"
+__version__ = "1.3.2"
 __author__ = "Caleb Piekstra"
 __email__ = "piekstra@users.noreply.github.com"
 
