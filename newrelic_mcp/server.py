@@ -9,7 +9,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 import httpx
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from . import log_parsing
 from .credentials import SecureCredentials

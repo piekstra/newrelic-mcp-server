@@ -27,7 +27,7 @@ classifiers = [
 ]
 keywords = ["newrelic", "mcp", "monitoring", "observability", "claude", "ai"]
 dependencies = [
-    "fastmcp>=0.1.0",
+    "fastmcp>=4,<5",
     "httpx>=0.24.0",
     "keyring>=24.0.0",
 ]
