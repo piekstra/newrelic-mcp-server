@@ -124,10 +124,16 @@ jobs:
         EOF
 
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
       with:
         body_path: release_notes.md
         files: |
           dist/*
-        draft: false
+        draft: true
         prerelease: false
+        fail_on_unmatched_files: true
+
+    - name: Publish the release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest
